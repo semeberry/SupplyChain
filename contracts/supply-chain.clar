@@ -189,3 +189,48 @@
   )
 )
 
+;; Resolve dispute
+(define-public (resolve-dispute
+  (invoice-id uint)
+  (resolution (string-ascii 20))
+)
+  (let
+    (
+      (dispute (unwrap! (map-get? disputes { invoice-id: invoice-id }) (err u1)))
+      (invoice (unwrap! (map-get? invoices { invoice-id: invoice-id }) (err u2)))
+    )
+    (asserts! (is-eq resolution "SELLER_WINS") (err u3))
+    (asserts! (is-eq resolution "BUYER_WINS") (err u4))
+
+    ;; Update dispute status
+    (map-set disputes
+      { invoice-id: invoice-id }
+      (merge dispute { status: "RESOLVED" })
+    )
+
+    ;; Handle collateral based on resolution
+    (if (is-eq resolution "SELLER_WINS")
+      ;; Release collateral to seller
+      (map-delete collateral-deposits
+        {
+          invoice-id: invoice-id,
+          depositor: (get buyer invoice)
+        }
+      )
+      ;; Return collateral to buyer
+      (map-delete collateral-deposits
+        {
+          invoice-id: invoice-id,
+          depositor: (get buyer invoice)
+        }
+      )
+    )
+
+    (ok true)
+  )
+)
+
+;; Utility function to check invoice status
+(define-read-only (get-invoice-status (invoice-id uint))
+  (map-get? invoices { invoice-id: invoice-id })
+)
