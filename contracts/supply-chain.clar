@@ -54,3 +54,35 @@
   }
 )
 
+;; Deposit collateral for an invoice
+(define-public (deposit-collateral
+  (invoice-id uint)
+  (amount uint)
+)
+  (let
+    (
+      (invoice (unwrap! (map-get? invoices { invoice-id: invoice-id }) (err u1)))
+      (is-valid-depositor
+        (or
+          (is-eq tx-sender (get seller invoice))
+          (is-eq tx-sender (get buyer invoice))
+        )
+      )
+    )
+    (asserts! is-valid-depositor (err u2))
+    (asserts! (>= amount (get collateral-amount invoice)) (err u3))
+
+    (map-set collateral-deposits
+      {
+        invoice-id: invoice-id,
+        depositor: tx-sender
+      }
+      {
+        amount: amount,
+        locked: true
+      }
+    )
+    (ok true)
+  )
+)
+
