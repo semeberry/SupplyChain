@@ -86,3 +86,54 @@
   )
 )
 
+;; 3. Payment Settlement Contract
+(define-map payment-records
+  { invoice-id: uint }
+  {
+    paid-amount: uint,
+    payment-status: (string-ascii 20),
+    payment-date: uint
+  }
+)
+
+;; Process invoice payment
+(define-public (process-payment
+  (invoice-id uint)
+  (payment-amount uint)
+)
+  (let
+    (
+      (invoice (unwrap! (map-get? invoices { invoice-id: invoice-id }) (err u1)))
+      (is-buyer (is-eq tx-sender (get buyer invoice)))
+    )
+    (asserts! is-buyer (err u2))
+    (asserts! (>= payment-amount (get amount invoice)) (err u3))
+
+    ;; Update invoice status
+    (map-set invoices
+      { invoice-id: invoice-id }
+      (merge invoice { status: "PAID" })
+    )
+
+    ;; Record payment
+    (map-set payment-records
+      { invoice-id: invoice-id }
+      {
+        paid-amount: payment-amount,
+        payment-status: "COMPLETED",
+        payment-date: block-height
+      }
+    )
+
+    ;; Release collateral
+    (map-delete collateral-deposits
+      {
+        invoice-id: invoice-id,
+        depositor: (get buyer invoice)
+      }
+    )
+
+    (ok true)
+  )
+)
+
