@@ -42,3 +42,15 @@
   )
 )
 
+;; 2. Collateral Management Contract
+(define-map collateral-deposits
+  {
+    invoice-id: uint,
+    depositor: principal
+  }
+  {
+    amount: uint,
+    locked: bool
+  }
+)
+
