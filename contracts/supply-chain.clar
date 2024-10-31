@@ -137,3 +137,13 @@
   )
 )
 
+;; 4. Dispute Resolution Contract
+(define-map disputes
+  { invoice-id: uint }
+  {
+    disputant: principal,
+    reason: (string-ascii 100),
+    status: (string-ascii 20)
+  }
+)
+
