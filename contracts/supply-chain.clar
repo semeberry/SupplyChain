@@ -147,3 +147,45 @@
   }
 )
 
+;; Initiate a dispute
+(define-public (initiate-dispute
+  (invoice-id uint)
+  (reason (string-ascii 100))
+)
+  (let
+    (
+      (invoice (unwrap! (map-get? invoices { invoice-id: invoice-id }) (err u1)))
+      (is-valid-disputant
+        (or
+          (is-eq tx-sender (get seller invoice))
+          (is-eq tx-sender (get buyer invoice))
+        )
+      )
+    )
+    (asserts! is-valid-disputant (err u2))
+
+    (map-set disputes
+      { invoice-id: invoice-id }
+      {
+        disputant: tx-sender,
+        reason: reason,
+        status: "OPEN"
+      }
+    )
+
+    ;; Freeze collateral during dispute
+    (map-set collateral-deposits
+      {
+        invoice-id: invoice-id,
+        depositor: (get buyer invoice)
+      }
+      {
+        amount: (get collateral-amount invoice),
+        locked: true
+      }
+    )
+
+    (ok true)
+  )
+)
+
